@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vega-Lite Visualization</title>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    #vis {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sales Orders Visualization</h1>
+  <div id="vis"></div>
+
+  <script type="text/javascript">
+    const spec = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+      "data": {
+        "url": "https://raw.githubusercontent.com/Priyanka-1731/Assignment/main/HW_III%20-%20SalesOrders.csv",
+        "format": {"type": "csv"}
+      },
+      "vconcat": [
+        {
+          "hconcat": [
+            {
+              "mark": {"type": "arc", "innerRadius": 50},
+              "encoding": {
+                "theta": {"aggregate": "sum", "field": "Total", "type": "quantitative"},
+                "color": {
+                  "field": "Rep",
+                  "type": "nominal",
+                  "scale": {"scheme": "category20"},
+                  "legend": {"title": "Rep and Item info"}
+                },
+                "tooltip": [
+                  {"field": "Rep"},
+                  {"aggregate": "sum", "field": "Total", "type": "quantitative", "title": "Total Sales"}
+                ]
+              },
+              "title": "Donut Chart: Total Sales by Rep"
+            },
+            {
+              "mark": "circle",
+              "encoding": {
+                "x": {"field": "Units", "type": "quantitative"},
+                "y": {"field": "Unit Cost", "type": "quantitative"},
+                "color": {
+                  "condition": {"param": "brush", "field": "Item", "type": "nominal"},
+                  "value": "lightgray"
+                },
+                "tooltip": [
+                  {"field": "Item"},
+                  {"field": "Units"},
+                  {"field": "Unit Cost"}
+                ]
+              },
+              "params": [{"name": "brush", "select": {"type": "interval"}}],
+              "title": "Correlation Between Units and Unit Cost (with Brush)"
+            }
+          ]
+        },
+        {
+          "hconcat": [
+            {
+              "description": "Streamgraph of total sales over time by item",
+              "data": {
+                "url": "https://raw.githubusercontent.com/Priyanka-1731/Assignment/main/HW_III%20-%20SalesOrders.csv",
+                "format": {"type": "csv"}
+              },
+              "transform": [
+                {"calculate": "toDate(datum.OrderDate)", "as": "OrderDateParsed"},
+                {"timeUnit": "yearmonth", "field": "OrderDateParsed", "as": "Month"},
+                {"aggregate": [{"op": "sum", "field": "Total", "as": "TotalSales"}], "groupby": ["Month", "Item"]}
+              ],
+              "mark": "area",
+              "encoding": {
+                "x": {"timeUnit": "yearmonth", "field": "Month", "type": "temporal", "axis": {"title": "Month"}},
+                "y": {"field": "TotalSales", "type": "quantitative", "stack": "center", "axis": {"title": "Total Sales"}},
+                "color": {"field": "Item", "type": "nominal", "legend": {"title": "Rep and Item info"}},
+                "tooltip": [{"field": "Item"}, {"field": "TotalSales", "title": "Total Sales"}]
+              },
+              "title": "Streamgraph: Variation of Total Sales Over Time by Item"
+            },
+            {
+              "layer": [
+                {
+                  "mark": "bar",
+                  "encoding": {
+                    "x": {"field": "Units", "type": "quantitative", "bin": true, "title": "Units"},
+                    "y": {"aggregate": "count", "type": "quantitative", "title": "Frequency"}
+                  }
+                },
+                {
+                  "transform": [{"aggregate": [{"op": "mean", "field": "Units", "as": "mean_units"}]}],
+                  "mark": {"type": "rule", "color": "red", "size": 2},
+                  "encoding": {"x": {"field": "mean_units", "type": "quantitative"}}
+                }
+              ],
+              "title": "Histogram of Units with Global Mean"
+            }
+          ]
+        },
+        {
+          "hconcat": [
+            {
+              "description": "Single grouped bar chart showing Total Revenue for Region, Rep, and Item",
+              "data": {
+                "url": "https://raw.githubusercontent.com/Priyanka-1731/Assignment/main/HW_III%20-%20SalesOrders.csv",
+                "format": {"type": "csv"}
+              },
+              "transform": [
+                {"aggregate": [{"op": "sum", "field": "Total", "as": "TotalRevenue"}], "groupby": ["Region", "Rep", "Item"]}
+              ],
+              "mark": "bar",
+              "encoding": {
+                "x": {"field": "Rep", "type": "nominal", "axis": {"title": "Rep"}},
+                "y": {"field": "TotalRevenue", "type": "quantitative", "title": "Total Revenue"},
+                "color": {"field": "Item", "type": "nominal", "legend": {"title": "Item"}},
+                "column": {"field": "Region", "type": "nominal", "title": "Region"},
+                "tooltip": [
+                  {"field": "Region", "title": "Region"},
+                  {"field": "Rep", "title": "Rep"},
+                  {"field": "Item", "title": "Item"},
+                  {"field": "TotalRevenue", "title": "Total Revenue"}
+                ]
+              }
+            },
+            {
+              "title": "Scatter Plot: Total Sales by Product Item",
+              "data": {
+                "url": "https://raw.githubusercontent.com/Priyanka-1731/Assignment/main/HW_III%20-%20SalesOrders.csv",
+                "format": {"type": "csv"}
+              },
+              "transform": [
+                {"calculate": "toDate(datum.OrderDate)", "as": "OrderDateParsed"},
+                {"timeUnit": "yearmonth", "field": "OrderDateParsed", "as": "Month"},
+                {"aggregate": [{"op": "sum", "field": "Total", "as": "TotalSales"}], "groupby": ["Item", "Rep"]}
+              ],
+              "mark": "point",
+              "encoding": {
+                "x": {"field": "Item", "type": "nominal", "axis": {"title": "Product Item"}},
+                "y": {"field": "TotalSales", "type": "quantitative", "axis": {"title": "Total Sales"}},
+                "color": {"field": "Rep", "type": "nominal", "legend": {"title": "Sales Rep"}},
+                "tooltip": [
+                  {"field": "Item", "title": "Product Item"},
+                  {"field": "Rep", "title": "Sales Rep"},
+                  {"field": "TotalSales", "title": "Total Sales"}
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    };
+
+    vegaEmbed("#vis", spec).then(result => {
+      // You can interact with the Vega view instance via result.view
+    }).catch(console.error);
+  </script>
+</body>
+</html>
